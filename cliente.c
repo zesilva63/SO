@@ -14,9 +14,8 @@
 
 int main(int argc, char** argv) {
 
-    int open_pipe, i;
+    int open_pipe, i, wr;
     char buffer[SIZE]; /* onde colocar o comando */
-
 
 
     open_pipe = open(PIPE_PATH, O_WRONLY); /* abrir o pipe para escrita */
@@ -30,7 +29,7 @@ int main(int argc, char** argv) {
 
             for(i = 2; i < argc; i++) {
                 sprintf(buffer,"%s %s",argv[1],argv[i]);
-                write(open_pipe,buffer,strlen(buffer)+1);
+                wr = write(open_pipe,buffer,strlen(buffer)+1);
             }
 
         } else {

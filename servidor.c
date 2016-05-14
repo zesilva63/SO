@@ -16,6 +16,7 @@
 
 void inicia_diretorias(char* homedir);
 void inicia_pipe();
+char* get_codigo(char* ficheiro, char* codigo);
 
 
 int main() {
@@ -24,7 +25,7 @@ int main() {
     char buffer[SIZE];
     char* comando;
     char* ficheiro;
-    char* codigo;
+    char* codigo = malloc(SIZE*sizeof(char));
 
     char* homedir = getenv("HOME");
 
@@ -34,11 +35,18 @@ int main() {
     open_pipe = open(PIPE_PATH, O_RDONLY); /* abrir o pipe para leitura */
 
     while(1) {
-
         res_server = read(open_pipe,buffer,SIZE);
-        comando = strtok(buffer," \n");
-        ficheiro = strtok(NULL," \n");
+        if(res_server) {
 
+            if(!fork()) {
+                comando = strtok(buffer," \n");
+                ficheiro = strtok(NULL," \n");
+                codigo = get_codigo(ficheiro,codigo);
+            }else {
+                wait(NULL);
+            }
+
+        }
     }
 
     close(open_pipe);
@@ -51,7 +59,7 @@ int main() {
 void inicia_pipe() {
     int res_pipe;
     res_pipe = mkfifo(PIPE_PATH, 0744); /* criar o pipe */
-    if (res_pipe < 0) printf("Não foi possivel criar o pipe.\n");
+//    if (res_pipe < 0) printf("Não foi possivel criar o pipe.\n");
 }
 
 
@@ -67,4 +75,28 @@ void inicia_diretorias(char* homedir) {
     mkdir(metadata_folder,0700);
     sprintf(data_folder,"%s/.Backup/data",homedir);
     mkdir(data_folder,0700);
+}
+
+char* get_codigo(char* ficheiro,char* codigo) {
+
+    int pfd[2];
+    pipe(pfd);
+
+    if(fork()==0) {
+
+        close(pfd[0]);
+        dup2(pfd[1],1);
+        close(pfd[1]);
+        execlp("sha1sum","sha1sum",ficheiro,NULL);
+        _exit(1);
+
+    } else {
+        close(pfd[1]);
+        dup2(pfd[0],0);
+        close(pfd[0]);
+        wait(NULL);
+        read(0,codigo,SIZE);
+    }
+
+    return codigo;
 }
