@@ -14,6 +14,7 @@
 #define SIZE 256
 #define MAX_FILHOS 5
 
+/* ESTRUTURA */
 
 typedef struct ficheiro {
     pid_t pid_cliente;
@@ -23,6 +24,7 @@ typedef struct ficheiro {
 }*Ficheiro;
 
 
+/* FUNÇÕES */
 
 void inicia_pipe();
 char* get_codigo(char* ficheiro, char* codigo);
@@ -30,8 +32,6 @@ Ficheiro altera_ficheiro(Ficheiro f,char buffer[]);
 Ficheiro inicia_ficheiro();
 void backup(Ficheiro f);
 void restore(Ficheiro f);
-
-
 
 
 int main() {
@@ -71,10 +71,9 @@ int main() {
                     }
                     else if(strcmp(f->comando,"restore") == 0) {
                         restore(f);
-                        kill(f->pid_cliente,SIGUSR2); // mudar sinal, este é da copia
+                        kill(f->pid_cliente,SIGUSR2);
                     }
-                }else {
-
+                    _exit(0);
                 }
             }
         }

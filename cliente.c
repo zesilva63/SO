@@ -13,14 +13,20 @@
 #define SIZE 256
 
 void copiado();
+void recuperado();
+void morte(int pid);
+
+char* ficheiro;
+int vivos;
 
 int main(int argc, char** argv) {
 
     int open_pipe, i, res_write;
     char buffer[SIZE];
 
+    signal(SIGCHLD,morte);
     signal(SIGUSR1,copiado);
-    signal(SIGUSR2,restaurado);
+    signal(SIGUSR2,recuperado);
 
     open_pipe = open(PIPE_PATH, O_WRONLY); /* abrir o pipe para escrita */
 
@@ -32,11 +38,17 @@ int main(int argc, char** argv) {
         else if(strcmp(argv[1],"backup") == 0 || strcmp(argv[1],"restore") == 0) {
 
             for(i = 2; i < argc; i++) {
+                vivos++;
+                if(!fork()) {
                     sprintf(buffer,"%s %s %d",argv[1],argv[i],getpid());
                     res_write = write(open_pipe,buffer,strlen(buffer)+1);
-                    printf("%s",argv[i]);
+                    ficheiro = argv[i];
                     pause();
+                    _exit(0);
+                }
             }
+            while(vivos > 0) wait(NULL);
+
         } else {
             printf("Comando Inválido\n");
         }
@@ -49,10 +61,15 @@ int main(int argc, char** argv) {
 
 
 void copiado() {
-    printf(": copiado\n");
+    printf("%s: copiado\n",ficheiro);
 }
 
 
-void restaurado() {
-    printf(": recuperado\n");
+void recuperado() {
+    printf("%s: recuperado\n",ficheiro);
+}
+
+void morte(int pid) {
+    waitpid(pid, NULL, WCONTINUED);
+    vivos--;
 }
