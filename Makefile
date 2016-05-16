@@ -3,9 +3,9 @@ CC=gcc
 CFLAGS= -O2
 
 make: $(OBJS)
-		  $(CC) $(CFLAGS) -o servidor servidor.c
-		  $(CC) $(CFLAGS) -o cliente cliente.c
+		  $(CC) $(CFLAGS) -o sobusrv servidor.c
+		  $(CC) $(CFLAGS) -o sobucli cliente.c
 
 clean:
-	-@rm servidor
-	-@rm cliente
+	-@rm sobusrv
+	-@rm sobucli

@@ -10,13 +10,16 @@
 #include <string.h>
 
 #define PIPE_PATH "/tmp/sobupipe"
-#define SIZE 128
+#define SIZE 256
+
+void copiado();
 
 int main(int argc, char** argv) {
 
-    int open_pipe, i, wr;
-    char buffer[SIZE]; /* onde colocar o comando */
+    int open_pipe, i, res_write;
+    char buffer[SIZE];
 
+    signal(SIGINT,copiado);
 
     open_pipe = open(PIPE_PATH, O_WRONLY); /* abrir o pipe para escrita */
 
@@ -28,8 +31,14 @@ int main(int argc, char** argv) {
         else if(strcmp(argv[1],"backup") == 0 || strcmp(argv[1],"restore") == 0) {
 
             for(i = 2; i < argc; i++) {
-                sprintf(buffer,"%s %s",argv[1],argv[i]);
-                wr = write(open_pipe,buffer,strlen(buffer)+1);
+                if(!fork()) {
+                    sprintf(buffer,"%s %s %d",argv[1],argv[i],getpid());
+                    res_write = write(open_pipe,buffer,strlen(buffer)+1);
+                    pause();
+                    printf("%s: copiado\n",argv[i]);
+                }else {
+                    wait(NULL);
+                }
             }
 
         } else {
@@ -40,4 +49,8 @@ int main(int argc, char** argv) {
     close(open_pipe);
 
     return 0;
+}
+
+
+void copiado() {
 }
