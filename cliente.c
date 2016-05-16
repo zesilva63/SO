@@ -15,6 +15,7 @@
 void copiado();
 void recuperado();
 void morte(int pid);
+void falha();
 
 char* ficheiro;
 int vivos;
@@ -24,6 +25,7 @@ int main(int argc, char** argv) {
     int open_pipe, i, res_write;
     char buffer[SIZE];
 
+    signal(SIGINT,falha);
     signal(SIGCHLD,morte);
     signal(SIGUSR1,copiado);
     signal(SIGUSR2,recuperado);
@@ -59,6 +61,10 @@ int main(int argc, char** argv) {
     return 0;
 }
 
+
+void falha() {
+    printf("Falha no backup do ficheiro %s\n",ficheiro);
+}
 
 void copiado() {
     printf("%s: copiado\n",ficheiro);

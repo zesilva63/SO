@@ -23,6 +23,8 @@ typedef struct ficheiro {
     char* comando;
 }*Ficheiro;
 
+int filhos_vivos;
+
 
 /* FUNÇÕES */
 
@@ -30,15 +32,17 @@ void inicia_pipe();
 char* get_codigo(char* ficheiro, char* codigo);
 Ficheiro altera_ficheiro(Ficheiro f,char buffer[]);
 Ficheiro inicia_ficheiro();
-void backup(Ficheiro f);
+int backup(Ficheiro f);
 void restore(Ficheiro f);
-
+void morte(int pid);
 
 int main() {
 
     if(!fork()) {
 
-        int open_pipe, res_server, res_pipe;
+        signal(SIGCHLD,morte);
+
+        int open_pipe, res_server, res_pipe, res_comando;
         char buffer[SIZE];
 
         char* homedir = getenv("HOME");
@@ -63,11 +67,17 @@ int main() {
             res_server = read(open_pipe,buffer,SIZE);
 
             if(res_server) {
+
+                if(filhos_vivos == MAX_FILHOS) pause();
+
+                filhos_vivos++;
+                f = altera_ficheiro(f,buffer);
+
                 if(!fork()) {
-                    f = altera_ficheiro(f,buffer);
                     if(strcmp(f->comando,"backup") == 0) {
-                        backup(f);
-                        kill(f->pid_cliente,SIGUSR1);
+                        res_comando = backup(f);
+                        if(res_comando) kill(f->pid_cliente,SIGUSR1);
+                        else kill(f->pid_cliente,SIGINT);
                     }
                     else if(strcmp(f->comando,"restore") == 0) {
                         restore(f);
@@ -86,14 +96,23 @@ int main() {
 }
 
 
+
+void morte(int pid) {
+    waitpid(pid, NULL, WCONTINUED);
+    filhos_vivos--;
+}
+
+
+
 void restore(Ficheiro f) {
     printf("restaurado\n");
 }
 
 
 
-void backup(Ficheiro f) {
-
+int backup(Ficheiro f) {
+    int mudar_nome;
+    int resultado = 0;
     int pfd[2];
     pipe(pfd);
 
@@ -117,32 +136,38 @@ void backup(Ficheiro f) {
 
     if(fork()==0) {
         execlp("cp","cp",f->ficheiro,data_folder,NULL);
-        perror("falhou a copia do ficheiro");
+        perror("Falha na cópia do ficheiro");
+        resultado = 1;
         _exit(0);
     } else {
         wait(NULL);
         if(!fork()) {
             execlp("gzip","gzip",data_path,NULL);
-            perror("falhou a copia do ficheiro");
+            resultado = 1;
+            perror("Falha ao comprimir o ficheiro");
             _exit(0);
         }else {
             wait(NULL);
-            if(!fork()) {
-                execlp("mv","mv",data_encripted,file_coded,NULL);
-                perror("falhou a copia do ficheiro");
-                _exit(0);
-            }else {
-                wait(NULL);
-                if(!fork()) {
-                    execlp("ln","ln",file_coded,file_metadata,NULL);
-                    perror("linkagem do ficheiro para metadata mal sucedida");
-                    _exit(0);
-                }else {
-                    wait(NULL);
-                }
-            }
         }
     }
+
+    mudar_nome = rename(data_encripted,file_coded);
+    if(mudar_nome == -1) {
+         printf("Erro ao alterar o nome do ficheiro %s\n",f->ficheiro);
+         resultado = 1;
+    }
+
+    if(!fork()) {
+        execlp("ln","ln","-s",file_coded,file_metadata,NULL);
+        resultado = 1;
+        perror("Linkagem do ficheiro para metadata mal sucedida");
+        _exit(0);
+    }else {
+        wait(NULL);
+    }
+
+
+    return resultado;
 }
 
 
@@ -178,13 +203,14 @@ char* get_codigo(char* ficheiro,char* codigo) {
             dup2(pfd[1],1);
             close(pfd[1]);
             execlp("sha1sum","sha1sum",ficheiro,NULL);
+            perror("Falhou a obter o código");
             _exit(1);
 
         } else {
+            wait(NULL);
             close(pfd[1]);
             dup2(pfd[0],0);
             close(pfd[0]);
-            wait(NULL);
             read(0,codigo,SIZE);
         }
 
