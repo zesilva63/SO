@@ -19,7 +19,8 @@ int main(int argc, char** argv) {
     int open_pipe, i, res_write;
     char buffer[SIZE];
 
-    signal(SIGINT,copiado);
+    signal(SIGUSR1,copiado);
+    signal(SIGUSR2,restaurado);
 
     open_pipe = open(PIPE_PATH, O_WRONLY); /* abrir o pipe para escrita */
 
@@ -31,16 +32,11 @@ int main(int argc, char** argv) {
         else if(strcmp(argv[1],"backup") == 0 || strcmp(argv[1],"restore") == 0) {
 
             for(i = 2; i < argc; i++) {
-                if(!fork()) {
                     sprintf(buffer,"%s %s %d",argv[1],argv[i],getpid());
                     res_write = write(open_pipe,buffer,strlen(buffer)+1);
+                    printf("%s",argv[i]);
                     pause();
-                    printf("%s: copiado\n",argv[i]);
-                }else {
-                    wait(NULL);
-                }
             }
-
         } else {
             printf("Comando Inválido\n");
         }
@@ -53,4 +49,10 @@ int main(int argc, char** argv) {
 
 
 void copiado() {
+    printf(": copiado\n");
+}
+
+
+void restaurado() {
+    printf(": recuperado\n");
 }

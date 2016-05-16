@@ -10,7 +10,7 @@
 #include <string.h>
 
 
-#define PIPE_PATH "/tmp/sobupip"
+#define PIPE_PATH "/tmp/sobupipe"
 #define SIZE 256
 #define MAX_FILHOS 5
 
@@ -32,7 +32,6 @@ void backup(Ficheiro f);
 void restore(Ficheiro f);
 
 
-int filhos_vivos;
 
 
 int main() {
@@ -62,16 +61,20 @@ int main() {
         while(1) {
 
             res_server = read(open_pipe,buffer,SIZE);
-            if(res_server) {
 
-                f = altera_ficheiro(f,buffer);
-                if(strcmp(f->comando,"backup") == 0) {
-                    backup(f);
-                    kill(f->pid_cliente,SIGINT);
-                }
-                else if(strcmp(f->comando,"restore") == 0) {
-                    restore(f);
-                    kill(f->pid_cliente,SIGINT); // mudar sinal, este é da copia
+            if(res_server) {
+                if(!fork()) {
+                    f = altera_ficheiro(f,buffer);
+                    if(strcmp(f->comando,"backup") == 0) {
+                        backup(f);
+                        kill(f->pid_cliente,SIGUSR1);
+                    }
+                    else if(strcmp(f->comando,"restore") == 0) {
+                        restore(f);
+                        kill(f->pid_cliente,SIGUSR2); // mudar sinal, este é da copia
+                    }
+                }else {
+
                 }
             }
         }
@@ -89,6 +92,7 @@ void restore(Ficheiro f) {
 }
 
 
+
 void backup(Ficheiro f) {
 
     int pfd[2];
@@ -102,6 +106,7 @@ void backup(Ficheiro f) {
     char file_coded[SIZE];
     char data_path[SIZE];
     char data_encripted[SIZE];
+    char file_metadata[SIZE];
 
     sprintf(backup_folder,"%s/.Backup",homedir);
     sprintf(metadata_folder,"%s/.Backup/metadata",homedir);
@@ -109,24 +114,37 @@ void backup(Ficheiro f) {
     sprintf(file_coded,"%s/%s",data_folder,f->codigo);
     sprintf(data_path,"%s/%s",data_folder,f->ficheiro);
     sprintf(data_encripted,"%s.gz",data_path);
+    sprintf(file_metadata,"%s/%s",metadata_folder,f->ficheiro);
 
     if(fork()==0) {
         execlp("cp","cp",f->ficheiro,data_folder,NULL);
+        perror("falhou a copia do ficheiro");
+        _exit(0);
     } else {
         wait(NULL);
         if(!fork()) {
             execlp("gzip","gzip",data_path,NULL);
+            perror("falhou a copia do ficheiro");
+            _exit(0);
         }else {
             wait(NULL);
             if(!fork()) {
                 execlp("mv","mv",data_encripted,file_coded,NULL);
+                perror("falhou a copia do ficheiro");
+                _exit(0);
             }else {
                 wait(NULL);
+                if(!fork()) {
+                    execlp("ln","ln",file_coded,file_metadata,NULL);
+                    perror("linkagem do ficheiro para metadata mal sucedida");
+                    _exit(0);
+                }else {
+                    wait(NULL);
+                }
             }
         }
     }
 }
-
 
 
 
