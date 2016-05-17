@@ -1,53 +1,54 @@
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/wait.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <pwd.h>
-#include <string.h>
 
-#define PIPE_PATH "/tmp/sobupipe"
-#define SIZE 256
-
-void copiado();
-void recuperado();
-void morte(int pid);
-void falha();
+#include "cliente.h"
 
 char* ficheiro;
 int vivos;
 
+
 int main(int argc, char** argv) {
 
-    int open_pipe, i, res_write;
-    char buffer[SIZE];
+    int open_pipe, i, res_write, open_file, tam;
+    char buffer[FILE_SIZE];
+    Ficheiro f = inicia_ficheiro();
 
-    signal(SIGINT,falha);
+    signal(SIGQUIT,falha);
     signal(SIGCHLD,morte);
     signal(SIGUSR1,copiado);
     signal(SIGUSR2,recuperado);
 
-    open_pipe = open(PIPE_PATH, O_WRONLY); /* abrir o pipe para escrita */
+    open_pipe = open(PIPE_PATH, O_WRONLY);
 
     if(argc == 1) printf("Nenhuma acção foi especificada\n");
+
     else if(argc == 2) printf("Nenhum ficheiro foi especificado\n");
+
     else {
 
         if(strcmp(argv[1],"exit") == 0) return 0;
         else if(strcmp(argv[1],"backup") == 0 || strcmp(argv[1],"restore") == 0) {
 
             for(i = 2; i < argc; i++) {
-                vivos++;
-                if(!fork()) {
-                    sprintf(buffer,"%s %s %d",argv[1],argv[i],getpid());
-                    res_write = write(open_pipe,buffer,strlen(buffer)+1);
-                    ficheiro = argv[i];
-                    pause();
-                    _exit(0);
+                if(access(argv[i], F_OK ) != -1 ) {
+                    vivos++;
+                    if(!fork()) {
+                        ficheiro = argv[i];
+                        open_file = open(argv[i],O_RDONLY);
+                        while((tam = read(open_file,buffer,FILE_SIZE)) > 0) {
+                            f = altera_ficheiro(f,argv[1],argv[i],getpid(),buffer,1,tam);
+                            res_write = write(open_pipe,f,sizeof(*f));
+                        }
+                        f = altera_ficheiro(f,argv[1],argv[i],getpid(),buffer,0,0);
+                        res_write = write(open_pipe,f,sizeof(*f));
+                        close(open_file);
+                        pause();
+                        _exit(0);
+                    } else {
+                        wait(NULL);
+                    }
+                } else {
+                    printf("O ficheiro %s não existe\n",argv[i]);
                 }
+
             }
             while(vivos > 0) wait(NULL);
 
@@ -56,7 +57,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    close(open_pipe);
+    //close(open_pipe);
 
     return 0;
 }

@@ -2,18 +2,18 @@ CC=gcc
 
 CFLAGS= -O2
 
-make: $(OBJS)
-		  $(CC) $(CFLAGS) -o sobusrv servidor.c
-		  $(CC) $(CFLAGS) -o sobucli cliente.c
+make:
+		  $(CC) $(CFLAGS) -o sobusrv servidor.c estrutura.c
+		  $(CC) $(CFLAGS) -o sobucli cliente.c estrutura.c
 
-run: $(OBJS)
-	$(CC) $(CFLAGS) -o sobusrv servidor.c
-	$(CC) $(CFLAGS) -o sobucli cliente.c
+run:
+	$(CC) $(CFLAGS) -o sobusrv servidor.c estrutura.c
+	$(CC) $(CFLAGS) -o sobucli cliente.c estrutura.c
 	./sobusrv
 
 clean:
 	-@rm sobusrv
 	-@rm sobucli
 
-exit:
+kill:
 	pkill -f ./sobusrv
