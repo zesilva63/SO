@@ -28,7 +28,8 @@
  char* get_codigo(char ficheiro[], char* codigo) {
 
      int pfd[2];
-     pipe(pfd);
+     int res_pipe, res_read;
+     res_pipe = pipe(pfd);
 
          if(!fork()) {
              close(pfd[0]);
@@ -43,7 +44,7 @@
              close(pfd[1]);
              dup2(pfd[0],0);
              close(pfd[0]);
-             read(0,codigo,SIZE);
+             res_read = read(0,codigo,SIZE);
          }
 
      return codigo;

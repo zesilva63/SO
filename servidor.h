@@ -14,7 +14,7 @@
 
 #include "estrutura.h"
 
-#define PIPE_PATH "/tmp/sobupipe"
+#define FILE_SIZE 4096
 #define SIZE 256
 #define MAX_FILHOS 5
 
