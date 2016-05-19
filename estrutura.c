@@ -24,12 +24,23 @@
      return f;
  }
 
-
- Ficheiro altera_ficheiro_cliente(Ficheiro f, char* comando, char* ficheiro, int pid, int estado) {
+ Ficheiro altera_ficheiro_servidor(Ficheiro f, char* comando, char* ficheiro, int pid, char conteudo[], int estado, int tamanho) {
 
      f->pid_cliente = pid;
      strcpy(f->ficheiro,ficheiro);
      strcpy(f->comando,comando);
+     memcpy(f->conteudo,conteudo,tamanho);
+     f->estado = estado;
+     f->tamanho = tamanho;
+
+     return f;
+ }
+
+ Ficheiro altera_ficheiro_cliente(Ficheiro f, char* comando, char* ficheiro, int pid, int estado) {
+
+     f->pid_cliente = pid;
+     strcpy(f->comando,comando);
+     strcpy(f->ficheiro,ficheiro);
      f->estado = estado;
 
      return f;

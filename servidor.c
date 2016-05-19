@@ -100,9 +100,10 @@ int restore(Ficheiro f, int open_pipe_cliente) {
     size_path = readlink(file_metadata,link_path,SIZE);
     link_path[size_path] = '\0';
 
+
     sprintf(data_folder,"%s/.Backup/data",homedir);
     sprintf(file_compressed,"%s/%s.gz",data_folder,f->ficheiro);
-
+    
     if(!fork()) {
         execlp("cp","cp",link_path,file_compressed,NULL);
         perror("Falha na alteração do ficheiro.");
@@ -117,18 +118,23 @@ int restore(Ficheiro f, int open_pipe_cliente) {
         _exit(0);
     }else wait(NULL);
 
-    printf("cheguei a fazer as coisas menos mandar\n");
-
     sprintf(file_to_send,"%s/%s",data_folder,f->ficheiro);
     open_file = open(file_to_send,O_RDONLY);
 
     while((tam = read(open_file,buffer,FILE_SIZE)) > 0) {
-        f = altera_ficheiro(f,f->comando,f->ficheiro,getpid(),buffer,1,tam);
+        f = altera_ficheiro_servidor(f,f->comando,f->ficheiro,getpid(),buffer,1,tam);
         res_write = write(open_pipe_cliente,f,sizeof(*f));
     }
-    f = altera_ficheiro(f,f->comando,f->ficheiro,getpid(),buffer,0,0);
+    f = altera_ficheiro_servidor(f,f->comando,f->ficheiro,getpid(),buffer,0,0);
     res_write = write(open_pipe_cliente,f,sizeof(*f));
     close(open_file);
+
+    if(!fork()) {
+        execlp("rm","rm",file_to_send,NULL);
+        perror("Falha na remoção do ficheiro.");
+        erro = 1;
+        _exit(0);
+    }else wait(NULL);
 
     return erro;
 }

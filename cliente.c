@@ -49,15 +49,12 @@ int main(int argc, char** argv) {
                     if(erro == 1) printf("Falha no backup do ficheiro %s\n",ficheiro);
                     else printf("%s: copiado\n",ficheiro);
                     _exit(0);
-
-                }
+                }else wait(NULL);
 
             } else {
                 printf("O ficheiro %s não existe\n",argv[i]);
             }
-
         }
-        while(vivos > 0) wait(NULL);
 
     }
     else if(strcmp(argv[1],"restore") == 0) {
@@ -75,25 +72,21 @@ int main(int argc, char** argv) {
                 res_write = write(open_pipe,f,sizeof(*f));
 
                 open_pipe_cliente = open(pipe_restore_path, O_RDONLY);
-                
+
                 f->estado = 1;
                 while(f->estado == 1) { // confirmar que funciona
                     res_read = read(open_pipe_cliente,f,sizeof(*f));
                     if(res_read) {
                         open_file = open(f->ficheiro, O_CREAT | O_APPEND | O_WRONLY, 0600);
-                        printf("|%s|\n",f->conteudo);
                         res_write = write(open_file,f->conteudo,f->tamanho);
                         close(open_file);
                     }
                 }
-                _exit(0);
-
-
-            while(vivos > 0) wait(NULL);
-
         }
         close(open_pipe_cliente);
         unlink(pipe_restore_path);
+
+        printf("%s: recuperado\n",f->ficheiro);
 
     }
     else {
