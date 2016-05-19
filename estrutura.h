@@ -28,6 +28,7 @@ typedef struct ficheiro {
 
 Ficheiro inicia_ficheiro();
 Ficheiro altera_ficheiro(Ficheiro f, char* comando, char* ficheiro, int pid, char conteudo[], int estado, int tamanho);
+ Ficheiro altera_ficheiro_cliente(Ficheiro f, char* comando, char* ficheiro, int pid, int estado);
 char* get_codigo(char* ficheiro, char* codigo);
 
 #endif

@@ -21,7 +21,7 @@
 int main();
 void inicia_pipe();
 int backup(Ficheiro f);
-int restore(Ficheiro f);
+int restore(Ficheiro f, int open_pipe_cliente);
 void morte(int pid);
 
 #endif

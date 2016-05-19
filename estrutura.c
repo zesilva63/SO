@@ -25,6 +25,16 @@
  }
 
 
+ Ficheiro altera_ficheiro_cliente(Ficheiro f, char* comando, char* ficheiro, int pid, int estado) {
+
+     f->pid_cliente = pid;
+     strcpy(f->ficheiro,ficheiro);
+     strcpy(f->comando,comando);
+     f->estado = estado;
+
+     return f;
+ }
+
  char* get_codigo(char ficheiro[], char* codigo) {
 
      int pfd[2];
