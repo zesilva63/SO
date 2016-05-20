@@ -22,6 +22,7 @@ int main() {
         sprintf(backup_folder,"%s/.Backup",homedir);
         mkdir(backup_folder,0755);
         sprintf(metadata_folder,"%s/.Backup/metadata",homedir);
+        sprintf(metadata_folder,"%s/.Backup/metadata",homedir);
         mkdir(metadata_folder,0755);
         sprintf(data_folder,"%s/.Backup/data",homedir);
         mkdir(data_folder,0755);
@@ -81,7 +82,12 @@ int main() {
                     }
                 }
                 else if(strcmp(f->comando,"delete") == 0) {
-                    // COMANDO DELETE
+                    if(!fork()) {
+                        res_comando = delete(f);
+                        if(!res_comando) kill(f->pid_cliente,SIGUSR1);
+                        else kill(f->pid_cliente,SIGUSR2);
+                        _exit(0);
+                    }
                 }
                 else {
                     // MAIS COMANDOS
@@ -96,6 +102,22 @@ int main() {
         _exit(0);
     }
     return 0;
+}
+
+
+int delete(Ficheiro f) {
+
+    int erro = 0;
+
+    char file_metadata[SIZE];
+    char* homedir = getenv("HOME");
+    sprintf(file_metadata,"%s/.Backup/metadata/%s",homedir,f->ficheiro);
+
+    if(access(file_metadata, F_OK ) != -1) {
+        unlink(file_metadata);
+    }else erro = 1;
+
+    return erro;
 }
 
 
