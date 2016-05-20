@@ -55,17 +55,20 @@ int main(int argc, char** argv) {
         while(vivos > 0) wait(NULL);
     }
     else if(strcmp(argv[1],"restore") == 0) {
-
         sprintf(pipe_restore_path,"%s/.Backup/soburestore",homedir);
-        res_pipe_cliente = mkfifo(pipe_restore_path,0744);
-
         for(i = 2; i < argc; i++) {
 
             vivos++;
 
-                ficheiro = argv[i];
-                f = altera_ficheiro_cliente(f,argv[1],argv[i],getpid(),0);
-                res_write = write(open_pipe,f,sizeof(*f));
+            ficheiro = argv[i];
+            f = altera_ficheiro_cliente(f,argv[1],argv[i],getpid(),0);
+            res_write = write(open_pipe,f,sizeof(*f));
+
+            pause();
+            if(erro == 1) {
+                printf("O ficheiro %s não existe\n", ficheiro);
+                continue;
+            }else {
 
                 open_pipe_cliente = open(pipe_restore_path, O_RDONLY);
 
@@ -79,19 +82,19 @@ int main(int argc, char** argv) {
                     }
                 }
                 printf("%s: recuperado\n",f->ficheiro);
+                close(open_pipe_cliente);
+            }
         }
-        close(open_pipe_cliente);
-        unlink(pipe_restore_path);
     }
     else if(strcmp(argv[1],"gc") == 0) {
         if(!fork()) {
             f = altera_ficheiro_gc(f,argv[1],getpid());
             res_write = write(open_pipe,f,sizeof(*f));
             pause();
-            if(erro == 1) printf("Falha na limpeza de ficheiros");
-            else printf("Ficheiros não usados limpos corretamente");
+            if(erro == 1) printf("Falha na limpeza de ficheiros\n");
+            else printf("Ficheiros não usados limpos corretamente\n");
             _exit(0);
-        }
+        }else wait(NULL);
     }
     else if(strcmp(argv[1],"delete") == 0 && argc == 3) {
         if(!fork()) {
@@ -102,7 +105,7 @@ int main(int argc, char** argv) {
             if(erro == 1) printf("Falha na remoção do ficheiro %s",ficheiro);
             else printf("%s: removido",ficheiro);
             _exit(0);
-        }
+        }else wait(NULL);
     }
     else {
         printf("Comando Inválido\n");

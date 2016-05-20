@@ -10,11 +10,10 @@ int main() {
 
     if(!fork()) {
 
-        int open_pipe, open_pipe_cliente, open_file, res_server, res_pipe, res_pipe_cliente, res_comando, res_write;
+        int open_pipe, open_file, res_server, res_pipe, res_pipe_cliente, res_comando, res_write;
         char buffer[SIZE], backup_folder[SIZE], metadata_folder[SIZE], data_folder[SIZE], data_path[SIZE];
         char file_coded[SIZE];
         char pipe_path[SIZE];
-        char pipe_restore_path[SIZE];
         Ficheiro f = inicia_ficheiro();
 
         char* homedir = getenv("HOME");
@@ -63,12 +62,7 @@ int main() {
                 else if(strcmp(f->comando,"restore") == 0) {
 
                     if(!fork()) {
-                        sprintf(pipe_restore_path,"%s/.Backup/soburestore",homedir);
-                        open_pipe_cliente = open(pipe_restore_path, O_WRONLY);
-                        res_comando = restore(f,open_pipe_cliente);
-                        if(!res_comando) kill(f->pid_cliente,SIGUSR1);
-                        else kill(f->pid_cliente,SIGUSR2);
-                        close(open_pipe_cliente);
+                        res_comando = restore(f);
                         _exit(0);
                     }
                 }
@@ -144,7 +138,7 @@ int gc(Ficheiro f) {
         execlp("ls","ls",data_folder,NULL);
         perror("Falhou a obter o código");
         erro = 1;
-        _exit(1);
+        _exit(0);
 
     } else {
         wait(NULL);
@@ -199,26 +193,39 @@ int gc(Ficheiro f) {
         }else wait(NULL);
 
     }
-
     return erro;
 }
 
 
 
+int restore(Ficheiro f) {
 
-int restore(Ficheiro f, int open_pipe_cliente) {
-
-    int size_path, erro = 0, open_file, tam, res_write;
+    int size_path, erro = 0, open_file, tam, res_write, open_pipe_cliente, res_pipe_cliente;
     char metadata_folder[SIZE], data_folder[SIZE], link_path[SIZE], file_metadata[SIZE], file_compressed[SIZE], file_to_send[SIZE];
     char buffer[FILE_SIZE];
     char* homedir = getenv("HOME");
+    char pipe_restore_path[SIZE];
+
+    sprintf(pipe_restore_path,"%s/.Backup/soburestore",homedir);
+    res_pipe_cliente = mkfifo(pipe_restore_path,0744);
+
 
     sprintf(metadata_folder,"%s/.Backup/metadata",homedir);
     sprintf(file_metadata,"%s/%s",metadata_folder,f->ficheiro);
 
+    if(access(file_metadata, F_OK ) == -1) {
+        kill(f->pid_cliente,SIGUSR2);
+        unlink(pipe_restore_path);
+        return 1;
+    }else {
+        kill(f->pid_cliente,SIGUSR1);
+    }
+
     size_path = readlink(file_metadata,link_path,SIZE);
     link_path[size_path] = '\0';
 
+
+    open_pipe_cliente = open(pipe_restore_path, O_WRONLY);
 
     sprintf(data_folder,"%s/.Backup/data",homedir);
     sprintf(file_compressed,"%s/%s.gz",data_folder,f->ficheiro);
