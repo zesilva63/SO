@@ -46,13 +46,13 @@ int main(int argc, char** argv) {
                     if(erro == 1) printf("Falha no backup do ficheiro %s\n",ficheiro);
                     else printf("%s: copiado\n",ficheiro);
                     _exit(0);
-                } else wait(NULL);
+                }
 
             } else {
                 printf("O ficheiro %s não existe\n",argv[i]);
             }
         }
-
+        while(vivos > 0) wait(NULL);
     }
     else if(strcmp(argv[1],"restore") == 0) {
 
@@ -92,7 +92,6 @@ int main(int argc, char** argv) {
             else printf("Ficheiros não usados limpos corretamente");
             _exit(0);
         }
-        // find /home/user/jose_silva/.Backup/metadata -lname /home/jose_silva/.Backup/data/ficheiro a procurar se tem cenas.
     }
     else if(strcmp(argv[1],"delete") == 0 && argc == 3) {
         if(!fork()) {
