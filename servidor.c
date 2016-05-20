@@ -13,6 +13,8 @@ int main() {
         int open_pipe, open_pipe_cliente, open_file, res_server, res_pipe, res_pipe_cliente, res_comando, res_write;
         char buffer[SIZE], backup_folder[SIZE], metadata_folder[SIZE], data_folder[SIZE], data_path[SIZE];
         char file_coded[SIZE];
+        char pipe_path[SIZE];
+        char pipe_restore_path[SIZE];
         Ficheiro f = inicia_ficheiro();
 
         char* homedir = getenv("HOME");
@@ -24,12 +26,10 @@ int main() {
         sprintf(data_folder,"%s/.Backup/data",homedir);
         mkdir(data_folder,0755);
 
-        char pipe_path[SIZE];
         sprintf(pipe_path,"%s/.Backup/sobupipe",homedir);
         res_pipe = mkfifo(pipe_path, 0744);
         open_pipe = open(pipe_path, O_RDONLY);
 
-        char pipe_restore_path[SIZE];
 
         while(1) {
 
@@ -54,7 +54,7 @@ int main() {
                         if(!fork()) {
                             res_comando = backup(f);
                             if(!res_comando) kill(f->pid_cliente,SIGUSR1);
-                            else kill(f->pid_cliente,SIGQUIT);
+                            else kill(f->pid_cliente,SIGUSR2);
                             _exit(0);
                         }
                     }
@@ -65,15 +65,27 @@ int main() {
                         sprintf(pipe_restore_path,"%s/.Backup/soburestore",homedir);
                         open_pipe_cliente = open(pipe_restore_path, O_WRONLY);
                         res_comando = restore(f,open_pipe_cliente);
-                        if(!res_comando) kill(f->pid_cliente,SIGUSR2);
-                        else kill(f->pid_cliente,SIGQUIT);
+                        if(!res_comando) kill(f->pid_cliente,SIGUSR1);
+                        else kill(f->pid_cliente,SIGUSR2);
+                        close(open_pipe_cliente);
                         _exit(0);
                     }
+                }
+                else if(strcmp(f->comando,"gc") == 0){
+
+                    if(!fork()) {
+                        res_comando = gc(f);
+                        if(!res_comando) kill(f->pid_cliente,SIGUSR1);
+                        else kill(f->pid_cliente,SIGUSR2);
+                        _exit(0);
+                    }
+                }
+                else if(strcmp(f->comando,"delete") == 0) {
+                    // COMANDO DELETE
                 }
                 else {
                     // MAIS COMANDOS
                 }
-
             } else {
                 close(open_pipe);
                 open_pipe = open(pipe_path,O_RDONLY);
@@ -85,6 +97,59 @@ int main() {
     }
     return 0;
 }
+
+
+int gc(Ficheiro f) {
+    int erro = 0;
+    int i = 0;
+    int pfd[2];
+    int res_pipe, res_read;
+    char ls_files[MAX_SIZE], data_folder[SIZE];
+    char* token;
+    char** ficheiros = malloc(100*sizeof(char*));
+    char* homedir = getenv("HOME");
+    sprintf(data_folder,"%s/.Backup/data",homedir);
+
+    res_pipe = pipe(pfd);
+
+    if(!fork()) {
+        close(pfd[0]);
+        dup2(pfd[1],1);
+        close(pfd[1]);
+        execlp("ls","ls",data_folder,NULL);
+        perror("Falhou a obter o código");
+        _exit(1);
+
+    } else {
+        wait(NULL);
+        close(pfd[1]);
+        dup2(pfd[0],0);
+        close(pfd[0]);
+        res_read = read(0,ls_files,MAX_SIZE);
+    }
+    token = strtok(ls_files," \n");
+
+    while( token != NULL ) {
+      ficheiros[i] = malloc((strlen(token)+1)*sizeof(char));
+      strcpy(ficheiros[i],token);
+      i++;
+      token = strtok(NULL," \n");
+   }
+    ficheiros[i] = NULL;
+
+    int j;
+
+    for(j = 0 ; j < i; j++) {
+        
+    }
+
+    //    find /home/user/jose_silva/.Backup/metadata -lname /home/jose_silva/.Backup/data/ficheiro a procurar se tem cenas.
+
+
+    return erro;
+}
+
+
 
 
 int restore(Ficheiro f, int open_pipe_cliente) {
@@ -103,7 +168,7 @@ int restore(Ficheiro f, int open_pipe_cliente) {
 
     sprintf(data_folder,"%s/.Backup/data",homedir);
     sprintf(file_compressed,"%s/%s.gz",data_folder,f->ficheiro);
-    
+
     if(!fork()) {
         execlp("cp","cp",link_path,file_compressed,NULL);
         perror("Falha na alteração do ficheiro.");
@@ -199,7 +264,6 @@ int backup(Ficheiro f) {
 
     return resultado;
 }
-
 
 
 

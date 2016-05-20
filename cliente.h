@@ -18,8 +18,7 @@
 #define SIZE 256
 
 int main(int argc, char** argv);
-void copiado();
-void recuperado();
+void correto();
 void morte(int pid);
 void falha();
 

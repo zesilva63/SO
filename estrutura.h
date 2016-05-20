@@ -30,6 +30,7 @@ Ficheiro inicia_ficheiro();
 Ficheiro altera_ficheiro(Ficheiro f, char* comando, char* ficheiro, int pid, char conteudo[], int estado, int tamanho);
 Ficheiro altera_ficheiro_cliente(Ficheiro f, char* comando, char* ficheiro, int pid, int estado);
 Ficheiro altera_ficheiro_servidor(Ficheiro f, char* comando, char* ficheiro, int pid, char conteudo[], int estado, int tamanho);
+Ficheiro altera_ficheiro_gc(Ficheiro f, char* comando, int pid);
 char* get_codigo(char* ficheiro, char* codigo);
 
 #endif

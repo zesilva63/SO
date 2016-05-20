@@ -12,10 +12,9 @@ int main(int argc, char** argv) {
     char buffer[FILE_SIZE], pipe_path[SIZE], pipe_restore_path[SIZE];
     Ficheiro f = inicia_ficheiro();
 
-    signal(SIGQUIT,falha);
+    signal(SIGUSR2,falha);
     signal(SIGCHLD,morte);
-    signal(SIGUSR1,copiado);
-    signal(SIGUSR2,recuperado);
+    signal(SIGUSR1,correto);
 
     char* homedir = getenv("HOME");
     sprintf(pipe_path,"%s/.Backup/sobupipe",homedir);
@@ -23,8 +22,6 @@ int main(int argc, char** argv) {
 
 
     if(argc == 1) printf("Nenhuma acção foi especificada\n");
-
-    else if(argc == 2) printf("Nenhum ficheiro foi especificado\n");
 
     else if(strcmp(argv[1],"backup") == 0) {
 
@@ -49,7 +46,7 @@ int main(int argc, char** argv) {
                     if(erro == 1) printf("Falha no backup do ficheiro %s\n",ficheiro);
                     else printf("%s: copiado\n",ficheiro);
                     _exit(0);
-                }else wait(NULL);
+                } else wait(NULL);
 
             } else {
                 printf("O ficheiro %s não existe\n",argv[i]);
@@ -67,14 +64,13 @@ int main(int argc, char** argv) {
             vivos++;
 
                 ficheiro = argv[i];
-                pid = getpid();
                 f = altera_ficheiro_cliente(f,argv[1],argv[i],getpid(),0);
                 res_write = write(open_pipe,f,sizeof(*f));
 
                 open_pipe_cliente = open(pipe_restore_path, O_RDONLY);
 
                 f->estado = 1;
-                while(f->estado == 1) { // confirmar que funciona
+                while(f->estado == 1) {
                     res_read = read(open_pipe_cliente,f,sizeof(*f));
                     if(res_read) {
                         open_file = open(f->ficheiro, O_CREAT | O_APPEND | O_WRONLY, 0600);
@@ -82,12 +78,32 @@ int main(int argc, char** argv) {
                         close(open_file);
                     }
                 }
+                printf("%s: recuperado\n",f->ficheiro);
         }
         close(open_pipe_cliente);
         unlink(pipe_restore_path);
-
-        printf("%s: recuperado\n",f->ficheiro);
-
+    }
+    else if(strcmp(argv[1],"gc") == 0) {
+        if(!fork()) {
+            f = altera_ficheiro_gc(f,argv[1],getpid());
+            res_write = write(open_pipe,f,sizeof(*f));
+            pause();
+            if(erro == 1) printf("Falha na limpeza de ficheiros");
+            else printf("Ficheiros não usados limpos corretamente");
+            _exit(0);
+        }
+        // find /home/user/jose_silva/.Backup/metadata -lname /home/jose_silva/.Backup/data/ficheiro a procurar se tem cenas.
+    }
+    else if(strcmp(argv[1],"delete") == 0 && argc == 3) {
+        if(!fork()) {
+            ficheiro = argv[2];
+            f = altera_ficheiro_cliente(f,argv[1],argv[2],getpid(),1);
+            res_write = write(open_pipe,f,sizeof(*f));
+            pause();
+            if(erro == 1) printf("Falha na remoção do ficheiro %s",ficheiro);
+            else printf("%s: removido",ficheiro);
+            _exit(0);
+        }
     }
     else {
         printf("Comando Inválido\n");
@@ -104,12 +120,7 @@ void falha() {
     erro = 1;
 }
 
-void copiado() {
-    erro = 0;
-}
-
-
-void recuperado() {
+void correto() {
     erro = 0;
 }
 

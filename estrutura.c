@@ -46,6 +46,14 @@
      return f;
  }
 
+ Ficheiro altera_ficheiro_gc(Ficheiro f, char* comando, int pid) {
+
+     f->pid_cliente = pid;
+     strcpy(f->comando,comando);
+
+     return f;
+ }
+
  char* get_codigo(char ficheiro[], char* codigo) {
 
      int pfd[2];

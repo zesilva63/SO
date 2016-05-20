@@ -15,6 +15,7 @@
 #include "estrutura.h"
 
 #define FILE_SIZE 4096
+#define MAX_SIZE 1024
 #define SIZE 256
 #define MAX_FILHOS 5
 
