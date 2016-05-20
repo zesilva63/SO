@@ -100,15 +100,18 @@ int main() {
 
 
 int gc(Ficheiro f) {
+
     int erro = 0;
     int i = 0;
     int pfd[2];
     int res_pipe, res_read;
-    char ls_files[MAX_SIZE], data_folder[SIZE];
+    char ls_files[MAX_SIZE], data_folder[SIZE], metadata_folder[SIZE], link_path[SIZE];
     char* token;
     char** ficheiros = malloc(100*sizeof(char*));
     char* homedir = getenv("HOME");
+    char file_data[SIZE];
     sprintf(data_folder,"%s/.Backup/data",homedir);
+    sprintf(metadata_folder,"%s/.Backup/metadata",homedir);
 
     res_pipe = pipe(pfd);
 
@@ -118,6 +121,7 @@ int gc(Ficheiro f) {
         close(pfd[1]);
         execlp("ls","ls",data_folder,NULL);
         perror("Falhou a obter o código");
+        erro = 1;
         _exit(1);
 
     } else {
@@ -127,6 +131,7 @@ int gc(Ficheiro f) {
         close(pfd[0]);
         res_read = read(0,ls_files,MAX_SIZE);
     }
+
     token = strtok(ls_files," \n");
 
     while( token != NULL ) {
@@ -137,14 +142,41 @@ int gc(Ficheiro f) {
    }
     ficheiros[i] = NULL;
 
-    int j;
+    int j, pfd1[2];
+    res_pipe = pipe(pfd1);
+    fcntl(pfd1[0], F_SETFL, O_NONBLOCK);
 
     for(j = 0 ; j < i; j++) {
-        
+
+        if(!fork()) {
+
+            sprintf(file_data,"%s/%s",data_folder,ficheiros[j]);
+
+            if(!fork()) {
+                close(pfd1[0]);
+                dup2(pfd1[1],1);
+                close(pfd1[1]);
+                execlp("find","find",metadata_folder,"-lname",file_data,NULL);
+                perror("Falhou a obter o código.");
+                erro = 1;
+                _exit(1);
+            } else {
+                wait(NULL);
+                close(pfd1[1]);
+                res_read = read(pfd1[0],link_path,SIZE);
+                if(strlen(link_path) == 0) {
+                    if(!fork()) {
+                        execlp("rm","rm",file_data,NULL);
+                        perror("Não consegui remover o ficheiro.");
+                        erro = 1;
+                    }else wait(NULL);
+                }
+            }
+
+            _exit(0);
+        }else wait(NULL);
+
     }
-
-    //    find /home/user/jose_silva/.Backup/metadata -lname /home/jose_silva/.Backup/data/ficheiro a procurar se tem cenas.
-
 
     return erro;
 }
