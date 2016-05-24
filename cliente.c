@@ -12,9 +12,9 @@ int main(int argc, char** argv) {
     char buffer[FILE_SIZE], pipe_path[SIZE], pipe_restore_path[SIZE];
     Ficheiro f = inicia_ficheiro();
 
+    signal(SIGUSR1,correto);
     signal(SIGUSR2,falha);
     signal(SIGCHLD,morte);
-    signal(SIGUSR1,correto);
 
     char* homedir = getenv("HOME");
     sprintf(pipe_path,"%s/.Backup/sobupipe",homedir);

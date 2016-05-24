@@ -21,7 +21,6 @@ int main() {
         sprintf(backup_folder,"%s/.Backup",homedir);
         mkdir(backup_folder,0755);
         sprintf(metadata_folder,"%s/.Backup/metadata",homedir);
-        sprintf(metadata_folder,"%s/.Backup/metadata",homedir);
         mkdir(metadata_folder,0755);
         sprintf(data_folder,"%s/.Backup/data",homedir);
         mkdir(data_folder,0755);
@@ -139,7 +138,6 @@ int gc(Ficheiro f) {
         perror("Falhou a obter o código");
         erro = 1;
         _exit(0);
-
     } else {
         wait(NULL);
         close(pfd[1]);
@@ -224,7 +222,6 @@ int restore(Ficheiro f) {
     size_path = readlink(file_metadata,link_path,SIZE);
     link_path[size_path] = '\0';
 
-
     open_pipe_cliente = open(pipe_restore_path, O_WRONLY);
 
     sprintf(data_folder,"%s/.Backup/data",homedir);
@@ -284,11 +281,12 @@ int backup(Ficheiro f) {
     sprintf(file_metadata,"%s/%s",metadata_folder,f->ficheiro);
 
 
-    if (access(file_coded, F_OK ) != -1) {
+    if(access(file_coded, F_OK ) != -1) {
 
         if (access(file_metadata, F_OK ) == -1) {
 
             if(!fork()) {
+                unlink(file_metadata);
                 execlp("ln","ln","-s",file_coded,file_metadata,NULL);
                 resultado = 1;
                 perror("Linkagem do ficheiro para metadata mal sucedida");
