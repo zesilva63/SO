@@ -60,12 +60,17 @@ int main() {
                 }
                 else if(strcmp(f->comando,"restore") == 0) {
 
+                    if(filhos_vivos == MAX_FILHOS) pause();
+                    filhos_vivos ++;
                     if(!fork()) {
                         res_comando = restore(f);
                         _exit(0);
                     }
                 }
                 else if(strcmp(f->comando,"gc") == 0){
+
+                    if(filhos_vivos == MAX_FILHOS) pause();
+                    filhos_vivos++;
 
                     if(!fork()) {
                         res_comando = gc(f);
@@ -75,6 +80,10 @@ int main() {
                     }
                 }
                 else if(strcmp(f->comando,"delete") == 0) {
+
+                    if(filhos_vivos == MAX_FILHOS) pause();
+                    filhos_vivos ++;
+
                     if(!fork()) {
                         res_comando = delete(f);
                         if(!res_comando) kill(f->pid_cliente,SIGUSR1);
@@ -158,7 +167,6 @@ int gc(Ficheiro f) {
 
     int j, pfd1[2];
     res_pipe = pipe(pfd1);
-    fcntl(pfd1[0], F_SETFL, O_NONBLOCK);
 
     for(j = 0 ; j < i; j++) {
 
@@ -171,25 +179,23 @@ int gc(Ficheiro f) {
                 dup2(pfd1[1],1);
                 close(pfd1[1]);
                 execlp("find","find",metadata_folder,"-lname",file_data,NULL);
-                perror("Falhou a obter o código.");
+                perror("Falha na obtenção da existência de link.");
                 erro = 1;
                 _exit(1);
             } else {
-                wait(NULL);
                 close(pfd1[1]);
                 res_read = read(pfd1[0],link_path,SIZE);
-                if(strlen(link_path) == 0) {
+                if(!strlen(link_path)) {
                     if(!fork()) {
                         execlp("rm","rm",file_data,NULL);
-                        perror("Não consegui remover o ficheiro.");
+                        perror("Não foi possivel remover o ficheiro.");
                         erro = 1;
                     }else wait(NULL);
                 }
+                wait(NULL);
             }
-
             _exit(0);
         }else wait(NULL);
-
     }
     return erro;
 }
@@ -206,7 +212,6 @@ int restore(Ficheiro f) {
 
     sprintf(pipe_restore_path,"%s/.Backup/soburestore",homedir);
     res_pipe_cliente = mkfifo(pipe_restore_path,0744);
-
 
     sprintf(metadata_folder,"%s/.Backup/metadata",homedir);
     sprintf(file_metadata,"%s/%s",metadata_folder,f->ficheiro);
@@ -286,7 +291,6 @@ int backup(Ficheiro f) {
         if (access(file_metadata, F_OK ) == -1) {
 
             if(!fork()) {
-                unlink(file_metadata);
                 execlp("ln","ln","-s",file_coded,file_metadata,NULL);
                 resultado = 1;
                 perror("Linkagem do ficheiro para metadata mal sucedida");
@@ -310,6 +314,10 @@ int backup(Ficheiro f) {
         if(mudar_nome == -1) {
             resultado = 1;
             printf("Erro ao alterar o nome do ficheiro %s\n",f->ficheiro);
+        }
+
+        if (access(file_metadata, F_OK ) != -1) {
+            unlink(file_metadata);
         }
 
         if(!fork()) {

@@ -2,7 +2,6 @@
 #include "cliente.h"
 
 char* ficheiro;
-int vivos;
 int erro;
 
 
@@ -14,7 +13,6 @@ int main(int argc, char** argv) {
 
     signal(SIGUSR1,correto);
     signal(SIGUSR2,falha);
-    signal(SIGCHLD,morte);
 
     char* homedir = getenv("HOME");
     sprintf(pipe_path,"%s/.Backup/sobupipe",homedir);
@@ -28,7 +26,6 @@ int main(int argc, char** argv) {
         for(i = 2; i < argc; i++) {
 
             if(access(argv[i], F_OK ) != -1 ) {
-                vivos++;
 
                 if(!fork()) {
                     ficheiro = argv[i];
@@ -55,16 +52,17 @@ int main(int argc, char** argv) {
         while(vivos > 0) wait(NULL);
     }
     else if(strcmp(argv[1],"restore") == 0) {
-        sprintf(pipe_restore_path,"%s/.Backup/soburestore",homedir);
-        for(i = 2; i < argc; i++) {
 
-            vivos++;
+        sprintf(pipe_restore_path,"%s/.Backup/soburestore",homedir);
+
+        for(i = 2; i < argc; i++) {
 
             ficheiro = argv[i];
             f = altera_ficheiro_cliente(f,argv[1],argv[i],getpid(),0);
             res_write = write(open_pipe,f,sizeof(*f));
 
             pause();
+
             if(erro == 1) {
                 printf("O ficheiro %s não existe\n", ficheiro);
                 continue;
@@ -124,9 +122,4 @@ void falha() {
 
 void correto() {
     erro = 0;
-}
-
-void morte(int pid) {
-    waitpid(pid, NULL, WCONTINUED);
-    vivos--;
 }
