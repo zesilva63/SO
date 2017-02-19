@@ -1,9 +1,7 @@
-# SO - Backup
-
-##Trabalho Prático de Sistemas Operativos
-
-##Sistema de Backup
+# Sistemas Operativos - Sistema de Backup
 ###Universidade do Minho 2015/2016
+
+Trabalho prático realizado no ambito da Unidade Curricular de Sistemas Operativos da Universidade do Minho com a intenção de desenvolver um sistema de backup.
 
 ###Instalação
 
